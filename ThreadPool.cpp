@@ -14,7 +14,7 @@
 void TestFunc()
 {
 	using namespace std::chrono_literals;
-	std::this_thread::sleep_for(2s);
+	std::this_thread::sleep_for(7s);
 	std::cout << "thread: " << std::this_thread::get_id() << std::endl;
 	return;
 }
@@ -38,16 +38,25 @@ double Factorial(int _n)
 
 int main()
 {
-	ThreadPool pool(3);
+	ThreadPool pool(15);
 
-	for (int i = 5; i < 15; ++i)
+	std::future<void> res;
+	try
 	{
-		pool.Push(TestFunc);//(Factorial);
+		for (int i = 1; i < 14; ++i)
+		{
+			pool.Push(TestFunc);//(Factorial);
 
-		//pool.Push(Factorial, i);
-		//std::cout << returnValue.get() << std::endl;
+			//pool.Push(Factorial, i);
+			//std::cout << returnValue.get() << std::endl;
+		}
 	}
-		
+	catch (ExceptionThreadPool& _err)
+	{
+		std::cout << "error: " << _err.what();
+	}
+	
+	//std::cout << res.get() << std::endl;
 	getchar();
 	return 0;
 }
