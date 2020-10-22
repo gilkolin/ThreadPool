@@ -15,7 +15,7 @@ void TestFunc()
 {
 	using namespace std::chrono_literals;
 	std::this_thread::sleep_for(7s);
-	std::cout << "thread: " << std::this_thread::get_id() << std::endl;
+	std::cout << "TestFunc: " << std::this_thread::get_id() << std::endl;
 	return;
 }
 
@@ -40,23 +40,27 @@ int main()
 {
 	ThreadPool pool(15);
 
-	std::future<void> res;
-	try
 	{
-		for (int i = 1; i < 14; ++i)
+		try
 		{
-			pool.Push(TestFunc);//(Factorial);
+			for (int i = 0; i < 4; ++i)
+			{
+				pool.Push(TestFunc);//(Factorial);
 
-			//pool.Push(Factorial, i);
-			//std::cout << returnValue.get() << std::endl;
+				//pool.Push(Factorial, i);
+				//std::cout << returnValue.get() << std::endl;
+			}
 		}
-	}
-	catch (ExceptionThreadPool& _err)
-	{
-		std::cout << "error: " << _err.what();
+		catch (ExceptionThreadPool& _err)
+		{
+			std::cout << "error: " << _err.what();
+		}
+
+		//std::cout << res.get() << std::endl;
 	}
 	
-	//std::cout << res.get() << std::endl;
+	std::cout << "PROGRAM_END";
 	getchar();
+	
 	return 0;
 }

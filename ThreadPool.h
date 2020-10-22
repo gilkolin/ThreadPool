@@ -2,7 +2,8 @@
 //TODO:
 //	threadSafe Queue
 //	function return not working
-//	bug: distructor
+//	stop, pause
+//	Force/UnForce shutdown
 
 #include<thread>
 #include<vector>
@@ -52,7 +53,7 @@ for purely computational load like scientific simulations the recommanded thread
 class ThreadPool
 {
 public:
-	ThreadPool(int _numThreads)
+	ThreadPool(int _numThreads) throw()
 		: m_toStop(false)
 	{
 		if (_numThreads >= MAX_THREADS)
@@ -77,6 +78,9 @@ public:
 		}
 	}
 
+	//void ForceShutdown()
+	//void Shutdown()
+	//Isv
 
 	ThreadPool::~ThreadPool()
 	{
@@ -86,29 +90,29 @@ public:
 		for (auto& thread : m_workersThreads)
 		{
 			Push(DTORRun);
-			m_condVar.notify_all();
 		}
-		
+		m_condVar.notify_all();
 		DEBUG(std::cout << "DTOR: notify all" << std::endl);
 
-		Push(DTORRun);
-		m_condVar.notify_all();
+		//Push(DTORRun);
+		//m_condVar.notify_all();
 
 		for (auto& thread : m_workersThreads)
 			thread.join();
 	}
 
-	bool IsShoultStop()
+	bool ShoultBeStop() noexcept
 	{
 		return m_toStop;
 	}
 
 	template<class Function, class ...Args>
-	std::future<typename std::result_of<Function(Args...)>::type> Push(Function &&_f, Args &&..._args)
+	std::future<typename std::result_of<Function(Args...)>::type> Push(Function &&_f, Args &&..._args) noexcept
 	{
 		std::packaged_task<typename std::result_of<Function(Args...)>::type()> task(std::bind(_f, _args...));
-		if (IsShoultStop())
-			return task.get_future();//exception?? how user know is not succeed?
+		//for verify the "poision apple" will push after the real funcs, the problem tha "poision apple" not pushed too...
+		/*if (IsShoultStop())
+			return task.get_future();//exception?? how user know is not succeed?*/
 
 		auto res = task.get_future();
 		{
@@ -120,13 +124,13 @@ public:
 	}
 
 private:
-	void ThreadManager()
+	void ThreadManager() noexcept
 	{
 		DEBUG(std::thread::id threadId = std::this_thread::get_id());
-		DEBUG(std::cout << "thread " << threadId << " was created" << std::endl);
+		DEBUG(std::cout << threadId << " was created" << std::endl);
 		std::packaged_task<void() > job;
 
-		while (!IsShoultStop())
+		while (!ShoultBeStop())
 		{
 			{
 				std::unique_lock<std::mutex> guard(m_mutex);
@@ -140,10 +144,10 @@ private:
 				m_jobQueue.pop();
 			}
 
-			DEBUG(std::cout << "Job execute at thread " << threadId << std::endl);
+			DEBUG(std::cout << "Job execute: " << threadId << std::endl);
 			job();
 		}
-		DEBUG(std::cout << "thread " << threadId << " was destroyed" << std::endl);
+		DEBUG(std::cout << threadId << " was destroyed" << std::endl);
 	}
 
 private:
